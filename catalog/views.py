@@ -1,51 +1,53 @@
 from django.http import HttpResponse
 from django.shortcuts import render
-from django.shortcuts import get_object_or_404
 from catalog.models import Product, Category
+from django.views.generic import ListView, DetailView, TemplateView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
 
 
-def products_list(request):
-    products = Product.objects.all()
-    context = {"products": products}
-    return render(request, "products_list.html", context)
+class ProductListView(ListView):
+    model = Product
+    template_name = 'catalog/products_list.html'  # Имя шаблона для отображения списка продуктов
+    context_object_name = 'products'
 
 
-def products_detail(request, pk):
-    product = get_object_or_404(Product, pk=pk)
-    context = {"product": product}
-    return render(request, 'products_detail.html', context)
+class ProductDetailView(DetailView):
+    model = Product
+    template_name = 'catalog/product_detail.html'
+    context_object_name = 'product'
 
 
-def contact_us(request):
-    if request.method == "POST":
-        # Получение данных из формы
-        name = request.POST.get("name")
-        message = request.POST.get("message")
-        # Обработка данных (например, сохранение в БД, отправка email и т. д.)
-        print(name)
-        print(message)
-        # Здесь мы просто возвращаем простой ответ
-        return HttpResponse(f"Спасибо, {name}! Ваше сообщение получено.")
-    return render(request, "contacts.html")
+class ContactTemplateView(TemplateView):
+    template_name = 'catalog/contacts.html'
+
+    def get_context_data(self, **kwargs):
+        if self.request.method == 'POST':
+            name = self.request.POST.get('name')
+            phone = self.request.POST.get('phone')
+            message = self.request.POST.get('message')
+            print(name)
+            print(phone)
+            print(message)
+            return HttpResponse('Сообщение отправлено!')
 
 
-def add_product(request):
-    if request.method == 'POST':
-        # Получение данных из формы
-        name = request.POST.get('name')
-        description = request.POST.get('description')
-        price = request.POST.get('price')
-        category_id = request.POST.get('category')
-        image = request.FILES.get('image')  # Загрузка изображения продукта (если оно есть)
-        # Создание нового продукта
-        product = Product.objects.create(
-            name=name,
-            description=description,
-            price=price,
-            category_id=category_id,
-            image=image,
-        )
-        return HttpResponse(f"Продукт '{product.name}' успешно добавлен.")
-    # Формирование формы добавления продукта
-    categories = Category.objects.all()
-    return render(request, 'add_product.html', {'categories': categories})
+class ProductCreateView(CreateView):
+    model = Product
+    fields = ['name', 'description', 'price', 'category', 'image']
+    template_name = 'catalog/product_form.html'
+    success_url = reverse_lazy('catalog:products_list')
+
+
+class ProductUpdateView(UpdateView):
+    model = Product
+    fields = ['name', 'description', 'price', 'category', 'image']
+    template_name = 'catalog/product_form.html'
+    success_url = reverse_lazy('catalog:products_list')
+
+
+class ProductDeleteView(DeleteView):
+    model = Product
+    template_name = 'catalog/product_delete_confirm.html'
+    success_url = reverse_lazy('catalog:products_list')
+    context_object_name = 'product'
+
