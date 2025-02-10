@@ -1,6 +1,5 @@
 from django.http import HttpResponse
-from django.shortcuts import render
-
+from django.contrib.auth.mixins import LoginRequiredMixin
 from catalog.forms import ProductForm
 from catalog.models import Product, Category
 from django.views.generic import (
@@ -22,14 +21,15 @@ class ProductListView(ListView):
     context_object_name = "products"
 
 
-class ProductDetailView(DetailView):
+class ProductDetailView(LoginRequiredMixin, DetailView):
     model = Product
     template_name = "catalog/product_detail.html"
     context_object_name = "product"
 
 
-class ContactTemplateView(TemplateView):
+class ContactTemplateView(LoginRequiredMixin, TemplateView):
     template_name = "catalog/contacts.html"
+    login_url = reverse_lazy("users:login")
 
     def get_context_data(self, **kwargs):
         if self.request.method == "POST":
@@ -42,17 +42,19 @@ class ContactTemplateView(TemplateView):
             return HttpResponse("Сообщение отправлено!")
 
 
-class ProductCreateView(CreateView):
+class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
     form_class = ProductForm
     template_name = "catalog/product_form.html"
+    login_url = reverse_lazy("users:login")
     success_url = reverse_lazy("catalog:products_list")
 
 
-class ProductUpdateView(UpdateView):
+class ProductUpdateView(LoginRequiredMixin, UpdateView):
     model = Product
     form_class = ProductForm
     template_name = "catalog/product_form.html"
+    login_url = reverse_lazy("users:login")
     success_url = reverse_lazy("catalog:products_list")
 
 
