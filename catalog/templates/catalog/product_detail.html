@@ -1,5 +1,6 @@
 {% extends 'catalog/base.html' %}
 {% load catalog_tags %}
+{% block title %}Информация о продукте{% endblock %}
 {% block content %}
 <div class="album py-5 bg-body-tertiary">
     <div class="container">
@@ -11,11 +12,16 @@
               <p class="card-text">Наименование: {{ object.name }}</p>
               <p class="card-text">Описание: {{ object.description }}</p>
               <p class="card-text">Цена: {{ object.price }}</p>
+              <p class="card-text"><small class="text-body-secondary">Last updated {{ product.updated_at }}</small></p>
+              <p class="card-text"><small class="text-body-secondary">Продавец: {{ product.owner }}</small></p>
               <div class="d-flex justify-content-between align-items-center">
                 <div class="btn-group">
                   <a class="btn btn-primary" href="{% url 'catalog:products_list' %}" role="button">Назад</a>
                 </div>
-                <small class="text-body-secondary">9 mins</small>
+                {% if request.user == product.owner %}
+                    <a href="{% url 'catalog:product_update' product.pk %}" class="btn btn-secondary">Изменить</a>
+                    <a href="{% url 'catalog:delete_product' product.pk %}" class="btn btn-danger">Удалить</a>
+                {% endif %}
               </div>
             </div>
           </div>
