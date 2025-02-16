@@ -1,6 +1,9 @@
+from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseForbidden
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 
 from catalog.forms import ProductForm, ProductModeratorForm
 from catalog.models import Product, Category
@@ -14,6 +17,8 @@ from django.views.generic import (
 )
 from django.urls import reverse_lazy, reverse
 
+from catalog.services import CategoryService
+
 
 class ProductListView(ListView):
     model = Product
@@ -22,13 +27,21 @@ class ProductListView(ListView):
     )
     context_object_name = "products"
 
-    def get_queryset(self):  # фильтрация продуктов по опубликованным
+    def get_queryset(self):
+        # Проверка наличия кэша
+        cached_products = cache.get("products")
+        if cached_products:
+            return cached_products
+        # Если кэша нет, получаем объекты из базы и кешируем их
+        products = Product.objects.all()
+        cache.set("products", products, 60 * 5)
         user = self.request.user
         if user.has_perm("catalog.can_unpublish_product"):
             return Product.objects.all()
         return Product.objects.filter(is_publish=True)
 
 
+@method_decorator(cache_page(60 * 5), name='dispatch')
 class ProductDetailView(LoginRequiredMixin, DetailView):
     model = Product
     template_name = "catalog/product_detail.html"
@@ -93,3 +106,21 @@ class ProductDeleteView(LoginRequiredMixin, DeleteView):
             return redirect(reverse("catalog:products_list"))
         else:
             return HttpResponseForbidden("У Вас нет прав на удаление продукта!")
+
+
+class CategoryListView(ListView):
+    model = Category
+    template_name = "catalog/categories_list.html"
+    context_object_name = "categories"
+
+
+class CategoryDetailView(DetailView):
+    model = Category
+    template_name = "catalog/category_detail.html"
+    context_object_name = "category"
+
+    def get_context_data(self, **kwargs):
+        # Получаем объекты продуктов и категории
+        products = CategoryService.get_products_from_category(category=self.object)
+        categories = CategoryService.get_all_categories()
+        return super().get_context_data(products=products, categories=categories, **kwargs)
