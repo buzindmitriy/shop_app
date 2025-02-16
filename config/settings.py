@@ -110,4 +110,11 @@ EMAIL_USE_SSL = True if os.getenv('EMAIL_USE_SSL') else False
 EMAIL_USE_TLS = False if os.getenv('EMAIL_USE_TLS') else True
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
-
+CACHE_ENABLED = os.getenv('CACHE_ENABLED')
+if CACHE_ENABLED:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': os.getenv('LOCATION'),
+        }
+    }
